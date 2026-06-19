@@ -1,0 +1,21 @@
+services:
+  postgres:
+    image: postgres:16
+    container_name: spl-pg
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: smart_parcel_locker
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - spl-pg-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d smart_parcel_locker"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  spl-pg-data:
