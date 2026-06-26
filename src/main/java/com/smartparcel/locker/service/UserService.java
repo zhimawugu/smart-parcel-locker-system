@@ -11,7 +11,6 @@ import com.smartparcel.locker.exception.InvalidCredentialsException;
  * controller and DAO layers.
  */
 public interface UserService {
-
     /**
      * Registers a new RESIDENT account (FR-01, A1).
      *

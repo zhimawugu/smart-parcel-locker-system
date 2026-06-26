@@ -18,10 +18,8 @@ import org.springframework.transaction.annotation.Transactional;
  */
 @Service
 public class UserServiceImpl implements UserService {
-
     @Resource
     private UserDao userDao;
-
     @Resource
     private PasswordEncoder passwordEncoder;
 

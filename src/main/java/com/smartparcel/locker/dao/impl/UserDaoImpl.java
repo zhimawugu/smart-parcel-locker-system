@@ -1,5 +1,6 @@
-package com.smartparcel.locker.dao;
+package com.smartparcel.locker.dao.impl;
 
+import com.smartparcel.locker.dao.UserDao;
 import com.smartparcel.locker.entity.User;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.NoResultException;

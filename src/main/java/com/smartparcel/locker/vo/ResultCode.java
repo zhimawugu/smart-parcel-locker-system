@@ -8,13 +8,16 @@ import lombok.Getter;
  */
 @Getter
 public enum ResultCode {
-
     SUCCESS(0, "success"),
     PARAM_ERROR(40000, "parameter validation failed"),
     UNAUTHORIZED(40100, "invalid email or password"),
+    RECIPIENT_NOT_FOUND(40410, "recipient not found"),
+    STATION_NOT_FOUND(40420, "locker station not found"),
+    PARCEL_NOT_FOUND(40430, "parcel not found"),
     EMAIL_EXISTS(40900, "email already registered"),
+    LOCKER_NOT_OPEN(40930, "locker is not open"),
+    NO_LOCKER_AVAILABLE(42200, "no suitable locker available"),
     INTERNAL_ERROR(50000, "internal server error");
-
     private final int code;
     private final String msg;
 

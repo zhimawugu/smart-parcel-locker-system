@@ -27,21 +27,16 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @WebMvcTest(UserController.class)
 @Import(GlobalExceptionHandler.class)
 class UserControllerTest {
-
     private static final String REGISTER_BODY =
             "{\"email\":\"resident@example.com\",\"password\":\"password123\",\"fullName\":\"Resident One\"}";
     private static final String LOGIN_BODY =
             "{\"email\":\"resident@example.com\",\"password\":\"password123\"}";
-
     @Autowired
     private MockMvc mockMvc;
-
     @MockBean
     private UserService userService;
-
     private final User user =
             new User("resident@example.com", "HASH", "Resident One", Role.RESIDENT);
-
     @Test
     void registerSucceedsWithCode0AndNoPassword() throws Exception {
         when(userService.register(any())).thenReturn(user);
@@ -52,7 +47,6 @@ class UserControllerTest {
                 .andExpect(jsonPath("$.data.email").value("resident@example.com"))
                 .andExpect(jsonPath("$.data.password").doesNotExist());
     }
-
     @Test
     void registerInvalidEmailReturnsParamErrorCode() throws Exception {
         String invalid = "{\"email\":\"not-an-email\",\"password\":\"password123\",\"fullName\":\"X\"}";
@@ -61,7 +55,6 @@ class UserControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value(40000));
     }
-
     @Test
     void registerDuplicateEmailReturnsEmailExistsCode() throws Exception {
         when(userService.register(any())).thenThrow(new EmailAlreadyExistsException("resident@example.com"));
@@ -70,7 +63,6 @@ class UserControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value(40900));
     }
-
     @Test
     void loginSucceedsWithCode0() throws Exception {
         when(userService.login(any())).thenReturn(user);
@@ -80,7 +72,6 @@ class UserControllerTest {
                 .andExpect(jsonPath("$.code").value(0))
                 .andExpect(jsonPath("$.data.email").value("resident@example.com"));
     }
-
     @Test
     void loginBadCredentialsReturnsUnauthorizedCode() throws Exception {
         when(userService.login(any())).thenThrow(new InvalidCredentialsException());

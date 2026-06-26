@@ -1,17 +1,16 @@
 package com.smartparcel.locker.dto;
 
-import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import lombok.Getter;
 import lombok.Setter;
 
 @Getter
 @Setter
-public class LoginRequest {
+public class CreateStationRequest {
     @NotBlank
-    @Email
-    private String email;
+    private String name;
 
     @NotBlank
-    private String password;
+    private String code;
+    private String address;
 }

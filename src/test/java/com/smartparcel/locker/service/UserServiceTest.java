@@ -26,16 +26,12 @@ import static org.mockito.Mockito.when;
  */
 @ExtendWith(MockitoExtension.class)
 class UserServiceTest {
-
     @Mock
     private UserDao userDao;
-
     @Mock
     private PasswordEncoder passwordEncoder;
-
     @InjectMocks
     private UserServiceImpl userService;
-
     private RegisterRequest registerRequest() {
         RegisterRequest request = new RegisterRequest();
         request.setEmail("new.user@example.com");
@@ -51,7 +47,6 @@ class UserServiceTest {
         request.setPassword(password);
         return request;
     }
-
     @Test
     void registerNormalizesEmailHashesPasswordAndForcesResident() {
         when(userDao.existsByEmail("new.user@example.com")).thenReturn(false);
@@ -64,7 +59,6 @@ class UserServiceTest {
         assertThat(created.getPassword()).isEqualTo("HASH");
         assertThat(created.getRole()).isEqualTo(Role.RESIDENT);
     }
-
     @Test
     void registerRejectsDuplicateEmail() {
         when(userDao.existsByEmail("new.user@example.com")).thenReturn(true);
@@ -72,7 +66,6 @@ class UserServiceTest {
         assertThatThrownBy(() -> userService.register(registerRequest()))
                 .isInstanceOf(EmailAlreadyExistsException.class);
     }
-
     @Test
     void loginReturnsUserWhenPasswordMatches() {
         User stored = new User("user@example.com", "HASH", "User", Role.RESIDENT);
@@ -83,7 +76,6 @@ class UserServiceTest {
 
         assertThat(result.getEmail()).isEqualTo("user@example.com");
     }
-
     @Test
     void loginRejectsUnknownEmail() {
         when(userDao.findByEmail("ghost@example.com")).thenReturn(Optional.empty());
@@ -91,7 +83,6 @@ class UserServiceTest {
         assertThatThrownBy(() -> userService.login(loginRequest("ghost@example.com", "whatever")))
                 .isInstanceOf(InvalidCredentialsException.class);
     }
-
     @Test
     void loginRejectsWrongPassword() {
         User stored = new User("user@example.com", "HASH", "User", Role.RESIDENT);
