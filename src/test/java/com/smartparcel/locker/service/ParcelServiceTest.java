@@ -15,6 +15,8 @@ import com.smartparcel.locker.exception.NoLockerAvailableException;
 import com.smartparcel.locker.exception.ParcelNotFoundException;
 import com.smartparcel.locker.exception.RecipientNotFoundException;
 import com.smartparcel.locker.exception.StationNotFoundException;
+import com.smartparcel.locker.service.impl.ParcelServiceImpl;
+import com.smartparcel.locker.service.utils.EmailSender;
 import com.smartparcel.locker.vo.OpenLockerResponse;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;

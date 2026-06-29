@@ -1,4 +1,4 @@
-package com.smartparcel.locker.service;
+package com.smartparcel.locker.service.utils;
 
 import org.apache.commons.mail.DefaultAuthenticator;
 import org.apache.commons.mail.Email;

@@ -1,4 +1,4 @@
-package com.smartparcel.locker.service;
+package com.smartparcel.locker.service.impl;
 
 import com.smartparcel.locker.dao.LockerDao;
 import com.smartparcel.locker.dao.LockerStationDao;
@@ -9,6 +9,7 @@ import com.smartparcel.locker.entity.LockerStation;
 import com.smartparcel.locker.enums.LockerSize;
 import com.smartparcel.locker.enums.LockerStatus;
 import com.smartparcel.locker.exception.StationNotFoundException;
+import com.smartparcel.locker.service.LockerService;
 import jakarta.annotation.Resource;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;

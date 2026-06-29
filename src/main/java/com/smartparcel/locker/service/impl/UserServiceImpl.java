@@ -1,4 +1,4 @@
-package com.smartparcel.locker.service;
+package com.smartparcel.locker.service.impl;
 
 import com.smartparcel.locker.dao.UserDao;
 import com.smartparcel.locker.dto.LoginRequest;
@@ -7,6 +7,7 @@ import com.smartparcel.locker.entity.User;
 import com.smartparcel.locker.enums.Role;
 import com.smartparcel.locker.exception.EmailAlreadyExistsException;
 import com.smartparcel.locker.exception.InvalidCredentialsException;
+import com.smartparcel.locker.service.UserService;
 import jakarta.annotation.Resource;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;

@@ -7,6 +7,7 @@ import com.smartparcel.locker.entity.User;
 import com.smartparcel.locker.enums.Role;
 import com.smartparcel.locker.exception.EmailAlreadyExistsException;
 import com.smartparcel.locker.exception.InvalidCredentialsException;
+import com.smartparcel.locker.service.impl.UserServiceImpl;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;

@@ -1,4 +1,4 @@
-package com.smartparcel.locker.service;
+package com.smartparcel.locker.service.impl;
 
 import com.smartparcel.locker.dao.LockerDao;
 import com.smartparcel.locker.dao.LockerStationDao;
@@ -12,6 +12,8 @@ import com.smartparcel.locker.enums.LockerSize;
 import com.smartparcel.locker.enums.LockerStatus;
 import com.smartparcel.locker.enums.ParcelStatus;
 import com.smartparcel.locker.exception.*;
+import com.smartparcel.locker.service.utils.EmailSender;
+import com.smartparcel.locker.service.ParcelService;
 import com.smartparcel.locker.vo.OpenLockerResponse;
 import jakarta.annotation.Resource;
 import org.springframework.stereotype.Service;
