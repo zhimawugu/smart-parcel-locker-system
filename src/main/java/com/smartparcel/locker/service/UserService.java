@@ -3,8 +3,6 @@ package com.smartparcel.locker.service;
 import com.smartparcel.locker.dto.LoginRequest;
 import com.smartparcel.locker.dto.RegisterRequest;
 import com.smartparcel.locker.entity.User;
-import com.smartparcel.locker.exception.EmailAlreadyExistsException;
-import com.smartparcel.locker.exception.InvalidCredentialsException;
 
 /**
  * Business logic for user registration and login (FR-01). Sits between the

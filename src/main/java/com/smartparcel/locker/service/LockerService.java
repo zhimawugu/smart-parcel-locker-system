@@ -5,7 +5,6 @@ import com.smartparcel.locker.entity.LockerStation;
 import com.smartparcel.locker.dto.CreateLockerRequest;
 import com.smartparcel.locker.dto.CreateStationRequest;
 import com.smartparcel.locker.enums.LockerSize;
-import com.smartparcel.locker.exception.StationNotFoundException;
 
 import java.util.List;
 

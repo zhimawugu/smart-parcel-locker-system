@@ -1,11 +1,10 @@
 package com.smartparcel.locker.controller;
 
+import com.smartparcel.locker.exception.BizException;
 import com.smartparcel.locker.exception.GlobalExceptionHandler;
-import com.smartparcel.locker.exception.LockerNotOpenException;
-import com.smartparcel.locker.exception.NoLockerAvailableException;
-import com.smartparcel.locker.exception.RecipientNotFoundException;
 import com.smartparcel.locker.service.ParcelService;
 import com.smartparcel.locker.vo.OpenLockerResponse;
+import com.smartparcel.locker.vo.ResultCode;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
@@ -54,14 +53,14 @@ class ParcelControllerTest {
     }
     @Test
     void openUnknownRecipientReturnsRecipientNotFoundCode() throws Exception {
-        when(parcelService.openLocker(any())).thenThrow(new RecipientNotFoundException());
+        when(parcelService.openLocker(any())).thenThrow(new BizException(ResultCode.RECIPIENT_NOT_FOUND));
 
         mockMvc.perform(post("/api/parcels/open").contentType(APPLICATION_JSON).content(OPEN_BODY))
                 .andExpect(jsonPath("$.code").value(40410));
     }
     @Test
     void openNoLockerReturnsNoLockerAvailableCode() throws Exception {
-        when(parcelService.openLocker(any())).thenThrow(new NoLockerAvailableException());
+        when(parcelService.openLocker(any())).thenThrow(new BizException(ResultCode.NO_LOCKER_AVAILABLE));
 
         mockMvc.perform(post("/api/parcels/open").contentType(APPLICATION_JSON).content(OPEN_BODY))
                 .andExpect(jsonPath("$.code").value(42200));
@@ -74,7 +73,7 @@ class ParcelControllerTest {
     }
     @Test
     void closeNotOpenReturnsLockerNotOpenCode() throws Exception {
-        doThrow(new LockerNotOpenException()).when(parcelService).closeLocker(any());
+        doThrow(new BizException(ResultCode.LOCKER_NOT_OPEN)).when(parcelService).closeLocker(any());
 
         mockMvc.perform(post("/api/parcels/1/close"))
                 .andExpect(jsonPath("$.code").value(40930));

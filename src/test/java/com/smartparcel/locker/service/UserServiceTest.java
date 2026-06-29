@@ -5,9 +5,9 @@ import com.smartparcel.locker.dto.LoginRequest;
 import com.smartparcel.locker.dto.RegisterRequest;
 import com.smartparcel.locker.entity.User;
 import com.smartparcel.locker.enums.Role;
-import com.smartparcel.locker.exception.EmailAlreadyExistsException;
-import com.smartparcel.locker.exception.InvalidCredentialsException;
+import com.smartparcel.locker.exception.BizException;
 import com.smartparcel.locker.service.impl.UserServiceImpl;
+import com.smartparcel.locker.vo.ResultCode;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -33,6 +33,7 @@ class UserServiceTest {
     private PasswordEncoder passwordEncoder;
     @InjectMocks
     private UserServiceImpl userService;
+
     private RegisterRequest registerRequest() {
         RegisterRequest request = new RegisterRequest();
         request.setEmail("new.user@example.com");
@@ -48,6 +49,7 @@ class UserServiceTest {
         request.setPassword(password);
         return request;
     }
+
     @Test
     void registerNormalizesEmailHashesPasswordAndForcesResident() {
         when(userDao.existsByEmail("new.user@example.com")).thenReturn(false);
@@ -60,13 +62,16 @@ class UserServiceTest {
         assertThat(created.getPassword()).isEqualTo("HASH");
         assertThat(created.getRole()).isEqualTo(Role.RESIDENT);
     }
+
     @Test
     void registerRejectsDuplicateEmail() {
         when(userDao.existsByEmail("new.user@example.com")).thenReturn(true);
 
         assertThatThrownBy(() -> userService.register(registerRequest()))
-                .isInstanceOf(EmailAlreadyExistsException.class);
+                .isInstanceOf(BizException.class)
+                .hasFieldOrPropertyWithValue("resultCode", ResultCode.EMAIL_EXISTS);
     }
+
     @Test
     void loginReturnsUserWhenPasswordMatches() {
         User stored = new User("user@example.com", "HASH", "User", Role.RESIDENT);
@@ -77,13 +82,16 @@ class UserServiceTest {
 
         assertThat(result.getEmail()).isEqualTo("user@example.com");
     }
+
     @Test
     void loginRejectsUnknownEmail() {
         when(userDao.findByEmail("ghost@example.com")).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> userService.login(loginRequest("ghost@example.com", "whatever")))
-                .isInstanceOf(InvalidCredentialsException.class);
+                .isInstanceOf(BizException.class)
+                .hasFieldOrPropertyWithValue("resultCode", ResultCode.UNAUTHORIZED);
     }
+
     @Test
     void loginRejectsWrongPassword() {
         User stored = new User("user@example.com", "HASH", "User", Role.RESIDENT);
@@ -91,6 +99,7 @@ class UserServiceTest {
         when(passwordEncoder.matches("wrong", "HASH")).thenReturn(false);
 
         assertThatThrownBy(() -> userService.login(loginRequest("user@example.com", "wrong")))
-                .isInstanceOf(InvalidCredentialsException.class);
+                .isInstanceOf(BizException.class)
+                .hasFieldOrPropertyWithValue("resultCode", ResultCode.UNAUTHORIZED);
     }
 }

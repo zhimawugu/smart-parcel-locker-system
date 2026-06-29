@@ -10,14 +10,11 @@ import com.smartparcel.locker.entity.LockerStation;
 import com.smartparcel.locker.entity.Parcel;
 import com.smartparcel.locker.entity.User;
 import com.smartparcel.locker.enums.LockerSize;
-import com.smartparcel.locker.exception.LockerNotOpenException;
-import com.smartparcel.locker.exception.NoLockerAvailableException;
-import com.smartparcel.locker.exception.ParcelNotFoundException;
-import com.smartparcel.locker.exception.RecipientNotFoundException;
-import com.smartparcel.locker.exception.StationNotFoundException;
+import com.smartparcel.locker.exception.BizException;
 import com.smartparcel.locker.service.impl.ParcelServiceImpl;
 import com.smartparcel.locker.service.utils.EmailSender;
 import com.smartparcel.locker.vo.OpenLockerResponse;
+import com.smartparcel.locker.vo.ResultCode;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -29,26 +26,20 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.util.List;
 import java.util.Optional;
 
-import static com.smartparcel.locker.enums.LockerSize.LARGE;
-import static com.smartparcel.locker.enums.LockerSize.MEDIUM;
-import static com.smartparcel.locker.enums.LockerSize.SMALL;
-import static com.smartparcel.locker.enums.LockerStatus.AVAILABLE;
-import static com.smartparcel.locker.enums.LockerStatus.DOOR_OPEN;
-import static com.smartparcel.locker.enums.LockerStatus.OCCUPIED;
+import static com.smartparcel.locker.enums.LockerSize.*;
+import static com.smartparcel.locker.enums.LockerStatus.*;
 import static com.smartparcel.locker.enums.ParcelStatus.WAITING_FOR_COLLECTION;
 import static com.smartparcel.locker.enums.Role.RESIDENT;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.AdditionalAnswers.returnsFirstArg;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.mockStatic;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class ParcelServiceTest {
+    private final User recipient = new User("alice@example.com", "HASH", "Alice", RESIDENT);
+    private final LockerStation station = new LockerStation("Building A", "ST-A", "addr");
     @Mock
     private UserDao userDao;
     @Mock
@@ -59,8 +50,7 @@ class ParcelServiceTest {
     private ParcelDao parcelDao;
     @InjectMocks
     private ParcelServiceImpl parcelService;
-    private final User recipient = new User("alice@example.com", "HASH", "Alice", RESIDENT);
-    private final LockerStation station = new LockerStation("Building A", "ST-A", "addr");
+
     private StoreParcelRequest request(LockerSize size) {
         StoreParcelRequest request = new StoreParcelRequest();
         request.setStationId(1L);
@@ -82,6 +72,7 @@ class ParcelServiceTest {
         when(parcelDao.existsByCollectionCode(anyString())).thenReturn(false);
         when(parcelDao.save(any(Parcel.class))).then(returnsFirstArg());
     }
+
     @Test
     void openExactSizeOpensDoorAndCreatesParcelWithCode() {
         Locker small = new Locker(1L, "S-01", SMALL, AVAILABLE);
@@ -101,6 +92,7 @@ class ParcelServiceTest {
         assertThat(saved.getStatus()).isEqualTo(WAITING_FOR_COLLECTION);
         assertThat(saved.getCollectionCode()).matches("\\d{6}");
     }
+
     @Test
     void openFallsBackToNextLargerLocker() {
         Locker medium = new Locker(1L, "M-01", MEDIUM, AVAILABLE);
@@ -113,29 +105,36 @@ class ParcelServiceTest {
         assertThat(response.lockerCode()).isEqualTo("M-01");
         assertThat(medium.getStatus()).isEqualTo(DOOR_OPEN);
     }
+
     @Test
     void openRejectsWhenNoSuitableLocker() {
         givenRecipientAndStationExist();
         givenAvailableLockers(new Locker(1L, "S-01", SMALL, AVAILABLE));
 
         assertThatThrownBy(() -> parcelService.openLocker(request(LARGE)))
-                .isInstanceOf(NoLockerAvailableException.class);
+                .isInstanceOf(BizException.class)
+                .hasFieldOrPropertyWithValue("resultCode", ResultCode.NO_LOCKER_AVAILABLE);
     }
+
     @Test
     void openRejectsUnknownRecipient() {
         when(userDao.findByEmail("alice@example.com")).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> parcelService.openLocker(request(SMALL)))
-                .isInstanceOf(RecipientNotFoundException.class);
+                .isInstanceOf(BizException.class)
+                .hasFieldOrPropertyWithValue("resultCode", ResultCode.RECIPIENT_NOT_FOUND);
     }
+
     @Test
     void openRejectsUnknownStation() {
         when(userDao.findByEmail("alice@example.com")).thenReturn(Optional.of(recipient));
         when(stationDao.findById(1L)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> parcelService.openLocker(request(SMALL)))
-                .isInstanceOf(StationNotFoundException.class);
+                .isInstanceOf(BizException.class)
+                .hasFieldOrPropertyWithValue("resultCode", ResultCode.STATION_NOT_FOUND);
     }
+
     @Test
     void openReleasesExpiredDoorOpenLockers() {
         Locker expired = new Locker(1L, "S-99", SMALL, DOOR_OPEN);
@@ -153,6 +152,7 @@ class ParcelServiceTest {
         assertThat(expired.getDoorOpenedAt()).isNull();
         verify(parcelDao).delete(orphan);
     }
+
     @Test
     void closeMarksLockerOccupied() {
         Parcel parcel = new Parcel(7L, 5L, SMALL, "482910", WAITING_FOR_COLLECTION, null);
@@ -169,6 +169,7 @@ class ParcelServiceTest {
         assertThat(locker.getStatus()).isEqualTo(OCCUPIED);
         assertThat(locker.getDoorOpenedAt()).isNull();
     }
+
     @Test
     void closeRejectsWhenLockerNotOpen() {
         Parcel parcel = new Parcel(7L, 5L, SMALL, "482910", WAITING_FOR_COLLECTION, null);
@@ -177,15 +178,19 @@ class ParcelServiceTest {
         when(lockerDao.findById(5L)).thenReturn(Optional.of(locker));
 
         assertThatThrownBy(() -> parcelService.closeLocker(1L))
-                .isInstanceOf(LockerNotOpenException.class);
+                .isInstanceOf(BizException.class)
+                .hasFieldOrPropertyWithValue("resultCode", ResultCode.LOCKER_NOT_OPEN);
     }
+
     @Test
     void closeRejectsUnknownParcel() {
         when(parcelDao.findById(1L)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> parcelService.closeLocker(1L))
-                .isInstanceOf(ParcelNotFoundException.class);
+                .isInstanceOf(BizException.class)
+                .hasFieldOrPropertyWithValue("resultCode", ResultCode.PARCEL_NOT_FOUND);
     }
+
     @Test
     void cancelFreesLockerAndDeletesParcel() {
         Parcel parcel = new Parcel(7L, 5L, SMALL, "482910", WAITING_FOR_COLLECTION, null);

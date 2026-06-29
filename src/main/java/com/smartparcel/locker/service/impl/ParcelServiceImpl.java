@@ -11,10 +11,11 @@ import com.smartparcel.locker.entity.User;
 import com.smartparcel.locker.enums.LockerSize;
 import com.smartparcel.locker.enums.LockerStatus;
 import com.smartparcel.locker.enums.ParcelStatus;
-import com.smartparcel.locker.exception.*;
-import com.smartparcel.locker.service.utils.EmailSender;
+import com.smartparcel.locker.exception.BizException;
 import com.smartparcel.locker.service.ParcelService;
+import com.smartparcel.locker.service.utils.EmailSender;
 import com.smartparcel.locker.vo.OpenLockerResponse;
+import com.smartparcel.locker.vo.ResultCode;
 import jakarta.annotation.Resource;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -24,10 +25,6 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
 
-/**
- * Default {@link ParcelService} implementation. Each method owns its transaction
- * so that locker-status changes and parcel writes commit atomically.
- */
 @Service
 public class ParcelServiceImpl implements ParcelService {
     private static final int CODE_GENERATION_ATTEMPTS = 10;
@@ -48,9 +45,9 @@ public class ParcelServiceImpl implements ParcelService {
         releaseExpiredDoorOpenLockers();
 
         User recipient = userDao.findByEmail(request.getRecipientEmail())
-                .orElseThrow(RecipientNotFoundException::new);
+                .orElseThrow(() -> new BizException(ResultCode.RECIPIENT_NOT_FOUND));
         stationDao.findById(request.getStationId())
-                .orElseThrow(StationNotFoundException::new);
+                .orElseThrow(() -> new BizException(ResultCode.STATION_NOT_FOUND));
 
         Locker locker = selectLocker(request.getStationId(), request.getSize());
         locker.setStatus(LockerStatus.DOOR_OPEN);
@@ -72,7 +69,8 @@ public class ParcelServiceImpl implements ParcelService {
     @Override
     @Transactional
     public void closeLocker(Long parcelId) {
-        Parcel parcel = parcelDao.findById(parcelId).orElseThrow(ParcelNotFoundException::new);
+        Parcel parcel = parcelDao.findById(parcelId)
+                .orElseThrow(() -> new BizException(ResultCode.PARCEL_NOT_FOUND));
         Locker locker = requireOpenLocker(parcel.getLockerId());
 
         locker.setStatus(LockerStatus.OCCUPIED);
@@ -80,7 +78,7 @@ public class ParcelServiceImpl implements ParcelService {
         lockerDao.save(locker);
 
         User recipient = userDao.findById(parcel.getRecipientId())
-                .orElseThrow(RecipientNotFoundException::new);
+                .orElseThrow(() -> new BizException(ResultCode.RECIPIENT_NOT_FOUND));
         EmailSender.send(recipient.getEmail(), "Your parcel collection code",
                 "Your parcel is ready. Collection code: " + parcel.getCollectionCode());
     }
@@ -88,7 +86,8 @@ public class ParcelServiceImpl implements ParcelService {
     @Override
     @Transactional
     public void cancel(Long parcelId) {
-        Parcel parcel = parcelDao.findById(parcelId).orElseThrow(ParcelNotFoundException::new);
+        Parcel parcel = parcelDao.findById(parcelId)
+                .orElseThrow(() -> new BizException(ResultCode.PARCEL_NOT_FOUND));
         Locker locker = requireOpenLocker(parcel.getLockerId());
 
         locker.setStatus(LockerStatus.AVAILABLE);
@@ -97,9 +96,6 @@ public class ParcelServiceImpl implements ParcelService {
         parcelDao.delete(parcel);
     }
 
-    /**
-     * Frees lockers left in DOOR_OPEN past the timeout, deleting their pending parcels.
-     */
     private void releaseExpiredDoorOpenLockers() {
         Instant threshold = Instant.now().minus(DOOR_OPEN_TIMEOUT);
         for (Locker locker : lockerDao.findExpiredDoorOpen(threshold)) {
@@ -112,9 +108,10 @@ public class ParcelServiceImpl implements ParcelService {
     }
 
     private Locker requireOpenLocker(Long lockerId) {
-        Locker locker = lockerDao.findById(lockerId).orElseThrow(LockerNotOpenException::new);
+        Locker locker = lockerDao.findById(lockerId)
+                .orElseThrow(() -> new BizException(ResultCode.LOCKER_NOT_OPEN));
         if (locker.getStatus() != LockerStatus.DOOR_OPEN) {
-            throw new LockerNotOpenException();
+            throw new BizException(ResultCode.LOCKER_NOT_OPEN);
         }
 
         return locker;
@@ -135,7 +132,7 @@ public class ParcelServiceImpl implements ParcelService {
         }
 
         if (larger == null) {
-            throw new NoLockerAvailableException();
+            throw new BizException(ResultCode.NO_LOCKER_AVAILABLE);
         }
 
         return larger;

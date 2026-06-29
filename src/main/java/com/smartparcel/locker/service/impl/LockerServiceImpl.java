@@ -8,8 +8,9 @@ import com.smartparcel.locker.entity.Locker;
 import com.smartparcel.locker.entity.LockerStation;
 import com.smartparcel.locker.enums.LockerSize;
 import com.smartparcel.locker.enums.LockerStatus;
-import com.smartparcel.locker.exception.StationNotFoundException;
+import com.smartparcel.locker.exception.BizException;
 import com.smartparcel.locker.service.LockerService;
+import com.smartparcel.locker.vo.ResultCode;
 import jakarta.annotation.Resource;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -36,7 +37,7 @@ public class LockerServiceImpl implements LockerService {
     @Override
     @Transactional
     public Locker createLocker(Long stationId, CreateLockerRequest request) {
-        stationDao.findById(stationId).orElseThrow(StationNotFoundException::new);
+        stationDao.findById(stationId).orElseThrow(() -> new BizException(ResultCode.STATION_NOT_FOUND));
         LockerStatus status = request.getStatus() != null ? request.getStatus() : LockerStatus.AVAILABLE;
         return lockerDao.save(new Locker(stationId, request.getCode(), request.getSize(), status));
     }
@@ -50,7 +51,7 @@ public class LockerServiceImpl implements LockerService {
     @Override
     @Transactional(readOnly = true)
     public List<Locker> listAvailableLockers(Long stationId, LockerSize size) {
-        stationDao.findById(stationId).orElseThrow(StationNotFoundException::new);
+        stationDao.findById(stationId).orElseThrow(() -> new BizException(ResultCode.STATION_NOT_FOUND));
 
         List<Locker> available = lockerDao.findAvailableByStation(stationId);
         if (size == null) {

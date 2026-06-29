@@ -2,9 +2,10 @@ package com.smartparcel.locker.controller;
 
 import com.smartparcel.locker.entity.Locker;
 import com.smartparcel.locker.entity.LockerStation;
+import com.smartparcel.locker.exception.BizException;
 import com.smartparcel.locker.exception.GlobalExceptionHandler;
-import com.smartparcel.locker.exception.StationNotFoundException;
 import com.smartparcel.locker.service.LockerService;
+import com.smartparcel.locker.vo.ResultCode;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
@@ -56,7 +57,7 @@ class StationControllerTest {
     @Test
     void availableLockersUnknownStationReturnsStationNotFoundCode() throws Exception {
         when(lockerService.listAvailableLockers(eq(99L), any()))
-                .thenThrow(new StationNotFoundException());
+                .thenThrow(new BizException(ResultCode.STATION_NOT_FOUND));
 
         mockMvc.perform(get("/api/stations/99/lockers/available"))
                 .andExpect(status().isOk())

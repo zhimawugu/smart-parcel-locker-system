@@ -2,10 +2,10 @@ package com.smartparcel.locker.controller;
 
 import com.smartparcel.locker.entity.User;
 import com.smartparcel.locker.enums.Role;
-import com.smartparcel.locker.exception.EmailAlreadyExistsException;
+import com.smartparcel.locker.exception.BizException;
 import com.smartparcel.locker.exception.GlobalExceptionHandler;
-import com.smartparcel.locker.exception.InvalidCredentialsException;
 import com.smartparcel.locker.service.UserService;
+import com.smartparcel.locker.vo.ResultCode;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
@@ -57,7 +57,7 @@ class UserControllerTest {
     }
     @Test
     void registerDuplicateEmailReturnsEmailExistsCode() throws Exception {
-        when(userService.register(any())).thenThrow(new EmailAlreadyExistsException("resident@example.com"));
+        when(userService.register(any())).thenThrow(new BizException(ResultCode.EMAIL_EXISTS));
 
         mockMvc.perform(post("/api/auth/register").contentType(APPLICATION_JSON).content(REGISTER_BODY))
                 .andExpect(status().isOk())
@@ -74,7 +74,7 @@ class UserControllerTest {
     }
     @Test
     void loginBadCredentialsReturnsUnauthorizedCode() throws Exception {
-        when(userService.login(any())).thenThrow(new InvalidCredentialsException());
+        when(userService.login(any())).thenThrow(new BizException(ResultCode.UNAUTHORIZED));
 
         mockMvc.perform(post("/api/auth/login").contentType(APPLICATION_JSON).content(LOGIN_BODY))
                 .andExpect(status().isOk())
