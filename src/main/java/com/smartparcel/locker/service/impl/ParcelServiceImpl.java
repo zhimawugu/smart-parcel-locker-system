@@ -4,8 +4,10 @@ import com.smartparcel.locker.dao.LockerDao;
 import com.smartparcel.locker.dao.LockerStationDao;
 import com.smartparcel.locker.dao.ParcelDao;
 import com.smartparcel.locker.dao.UserDao;
+import com.smartparcel.locker.dto.CollectParcelRequest;
 import com.smartparcel.locker.dto.StoreParcelRequest;
 import com.smartparcel.locker.entity.Locker;
+import com.smartparcel.locker.entity.LockerStation;
 import com.smartparcel.locker.entity.Parcel;
 import com.smartparcel.locker.entity.User;
 import com.smartparcel.locker.enums.LockerSize;
@@ -14,6 +16,7 @@ import com.smartparcel.locker.enums.ParcelStatus;
 import com.smartparcel.locker.exception.BizException;
 import com.smartparcel.locker.service.ParcelService;
 import com.smartparcel.locker.service.utils.EmailSender;
+import com.smartparcel.locker.vo.CollectInfoResponse;
 import com.smartparcel.locker.vo.OpenLockerResponse;
 import com.smartparcel.locker.vo.ResultCode;
 import jakarta.annotation.Resource;
@@ -94,6 +97,37 @@ public class ParcelServiceImpl implements ParcelService {
         locker.setDoorOpenedAt(null);
         lockerDao.save(locker);
         parcelDao.delete(parcel);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public CollectInfoResponse collect(CollectParcelRequest request) {
+        Parcel parcel = parcelDao.findByCollectionCode(request.getCollectionCode())
+                .filter(p -> p.getStatus() == ParcelStatus.WAITING_FOR_COLLECTION)
+                .orElseThrow(() -> new BizException(ResultCode.INVALID_COLLECTION_CODE));
+        Locker locker = lockerDao.findById(parcel.getLockerId())
+                .orElseThrow(() -> new BizException(ResultCode.INVALID_COLLECTION_CODE));
+        if (locker.getStatus() != LockerStatus.OCCUPIED
+                || !locker.getStationId().equals(request.getStationId())) {
+            throw new BizException(ResultCode.INVALID_COLLECTION_CODE);
+        }
+        LockerStation station = stationDao.findById(locker.getStationId())
+                .orElseThrow(() -> new BizException(ResultCode.INVALID_COLLECTION_CODE));
+        return new CollectInfoResponse(parcel.getId(), locker.getCode(), station.getName());
+    }
+
+    @Override
+    @Transactional
+    public void collectDone(Long parcelId) {
+        Parcel parcel = parcelDao.findById(parcelId)
+                .filter(p -> p.getStatus() == ParcelStatus.WAITING_FOR_COLLECTION)
+                .orElseThrow(() -> new BizException(ResultCode.INVALID_COLLECTION_CODE));
+        Locker locker = lockerDao.findById(parcel.getLockerId())
+                .orElseThrow(() -> new BizException(ResultCode.INVALID_COLLECTION_CODE));
+        parcel.setStatus(ParcelStatus.COLLECTED);
+        locker.setStatus(LockerStatus.AVAILABLE);
+        parcelDao.save(parcel);
+        lockerDao.save(locker);
     }
 
     private void releaseExpiredDoorOpenLockers() {

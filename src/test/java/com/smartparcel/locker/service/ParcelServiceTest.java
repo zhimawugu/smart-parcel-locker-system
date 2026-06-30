@@ -4,6 +4,7 @@ import com.smartparcel.locker.dao.LockerDao;
 import com.smartparcel.locker.dao.LockerStationDao;
 import com.smartparcel.locker.dao.ParcelDao;
 import com.smartparcel.locker.dao.UserDao;
+import com.smartparcel.locker.dto.CollectParcelRequest;
 import com.smartparcel.locker.dto.StoreParcelRequest;
 import com.smartparcel.locker.entity.Locker;
 import com.smartparcel.locker.entity.LockerStation;
@@ -13,6 +14,7 @@ import com.smartparcel.locker.enums.LockerSize;
 import com.smartparcel.locker.exception.BizException;
 import com.smartparcel.locker.service.impl.ParcelServiceImpl;
 import com.smartparcel.locker.service.utils.EmailSender;
+import com.smartparcel.locker.vo.CollectInfoResponse;
 import com.smartparcel.locker.vo.OpenLockerResponse;
 import com.smartparcel.locker.vo.ResultCode;
 import org.junit.jupiter.api.Test;
@@ -28,7 +30,7 @@ import java.util.Optional;
 
 import static com.smartparcel.locker.enums.LockerSize.*;
 import static com.smartparcel.locker.enums.LockerStatus.*;
-import static com.smartparcel.locker.enums.ParcelStatus.WAITING_FOR_COLLECTION;
+import static com.smartparcel.locker.enums.ParcelStatus.*;
 import static com.smartparcel.locker.enums.Role.RESIDENT;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -202,5 +204,48 @@ class ParcelServiceTest {
 
         assertThat(locker.getStatus()).isEqualTo(AVAILABLE);
         verify(parcelDao).delete(parcel);
+    }
+
+    private CollectParcelRequest collectRequest(String code, Long stationId) {
+        CollectParcelRequest request = new CollectParcelRequest();
+        request.setCollectionCode(code);
+        request.setStationId(stationId);
+        return request;
+    }
+
+    @Test
+    void collectReturnsLockerInfoForCodeAtStation() {
+        Parcel parcel = new Parcel(7L, 5L, SMALL, "472915", WAITING_FOR_COLLECTION, null);
+        Locker locker = new Locker(1L, "B-08", SMALL, OCCUPIED);
+        when(parcelDao.findByCollectionCode("472915")).thenReturn(Optional.of(parcel));
+        when(lockerDao.findById(5L)).thenReturn(Optional.of(locker));
+        when(stationDao.findById(1L)).thenReturn(Optional.of(station));
+
+        CollectInfoResponse info = parcelService.collect(collectRequest("472915", 1L));
+
+        assertThat(info.lockerCode()).isEqualTo("B-08");
+        assertThat(info.stationName()).isEqualTo("Building A");
+    }
+
+    @Test
+    void collectRejectsUnknownCode() {
+        when(parcelDao.findByCollectionCode("000000")).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> parcelService.collect(collectRequest("000000", 1L)))
+                .isInstanceOf(BizException.class)
+                .hasFieldOrPropertyWithValue("resultCode", ResultCode.INVALID_COLLECTION_CODE);
+    }
+
+    @Test
+    void collectDoneMarksCollectedAndFreesLocker() {
+        Parcel parcel = new Parcel(7L, 5L, SMALL, "472915", WAITING_FOR_COLLECTION, null);
+        Locker locker = new Locker(1L, "B-08", SMALL, OCCUPIED);
+        when(parcelDao.findById(9L)).thenReturn(Optional.of(parcel));
+        when(lockerDao.findById(5L)).thenReturn(Optional.of(locker));
+
+        parcelService.collectDone(9L);
+
+        assertThat(parcel.getStatus()).isEqualTo(COLLECTED);
+        assertThat(locker.getStatus()).isEqualTo(AVAILABLE);
     }
 }

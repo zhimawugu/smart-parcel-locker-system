@@ -42,6 +42,17 @@ public class ParcelDaoImpl implements ParcelDao {
     }
 
     @Override
+    public Optional<Parcel> findByCollectionCode(String collectionCode) {
+        return em.createQuery(
+                        "select p from Parcel p where p.collectionCode = :code", Parcel.class)
+                .setParameter("code", collectionCode)
+                .setMaxResults(1)
+                .getResultList()
+                .stream()
+                .findFirst();
+    }
+
+    @Override
     public void delete(Parcel parcel) {
         em.remove(em.contains(parcel) ? parcel : em.merge(parcel));
     }

@@ -1,8 +1,10 @@
 package com.smartparcel.locker.controller;
 
+import com.smartparcel.locker.dto.CollectParcelRequest;
 import com.smartparcel.locker.dto.StoreParcelRequest;
 import com.smartparcel.locker.service.ParcelService;
 import com.smartparcel.locker.vo.ApiResponse;
+import com.smartparcel.locker.vo.CollectInfoResponse;
 import com.smartparcel.locker.vo.OpenLockerResponse;
 import jakarta.annotation.Resource;
 import jakarta.validation.Valid;
@@ -32,6 +34,17 @@ public class ParcelController {
     @PostMapping("/{parcelId}/cancel")
     public ApiResponse<Void> cancel(@PathVariable Long parcelId) {
         parcelService.cancel(parcelId);
+        return ApiResponse.success(null);
+    }
+
+    @PostMapping("/collect")
+    public ApiResponse<CollectInfoResponse> collect(@Valid @RequestBody CollectParcelRequest request) {
+        return ApiResponse.success(parcelService.collect(request));
+    }
+
+    @PostMapping("/{parcelId}/collect/done")
+    public ApiResponse<Void> collectDone(@PathVariable Long parcelId) {
+        parcelService.collectDone(parcelId);
         return ApiResponse.success(null);
     }
 }

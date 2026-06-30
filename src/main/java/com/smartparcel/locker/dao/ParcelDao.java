@@ -12,6 +12,8 @@ public interface ParcelDao {
 
     Optional<Parcel> findByLockerIdAndStatus(Long lockerId, ParcelStatus status);
 
+    Optional<Parcel> findByCollectionCode(String collectionCode);
+
     void delete(Parcel parcel);
 
     boolean existsByCollectionCode(String collectionCode);

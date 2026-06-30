@@ -16,6 +16,7 @@ public enum ResultCode {
     PARCEL_NOT_FOUND(40430, "parcel not found"),
     GROUP_NOT_FOUND(40440, "group not found"),
     USER_NOT_FOUND(40450, "user not found"),
+    INVALID_COLLECTION_CODE(40460, "invalid or expired collection code"),
     EMAIL_EXISTS(40900, "email already registered"),
     DUPLICATE_MEMBER(40920, "member already in group"),
     LOCKER_NOT_OPEN(40930, "locker is not open"),
